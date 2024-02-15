@@ -1,0 +1,55 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amazon RDS Postgres Database setup via CFT'
+
+# Set up the Network -- This Aches
+Parameters:
+  
+  DBName:
+    Type: String
+    Description: Database name
+    Default: SALESDWH
+
+Resources:
+  SourceDBInsatnce:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBName
+      DBInstanceClass: db.m5d.large
+      Engine: postgres
+      MasterUsername: postgres
+      MasterUserPassword: password # Systems manager/ Parameters can be used here against typing credentials
+      AllocatedStorage: 20
+
+
+Outputs:
+  SourceDBInsatnce:
+    Description: Source Database Instance
+    Value: !Ref SourceDBInsatnce
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBInsatnce
+  SourceDBEndpoint:
+    Description: Source Database Endpoint
+    Value: !GetAtt SourceDBInsatnce.Endpoint.Address
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBEndpoint
+  SourceDBPort:
+    Description: Source Database Port
+    Value: !GetAtt SourceDBInsatnce.Endpoint.Port
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBPort
+  SourceDBName:
+    Description: Source Database Name
+    Value: !Ref DBName
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBName
+  SourceDBUsername:
+    Description: Source Database Username
+    Value: !Ref DBName
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBUsername
+  SourceDBPassword:
+    Description: Source Database Password
+    Value: password
+    Export:
+      Name: !Sub ${AWS::StackName}-SourceDBPassword
