@@ -22,6 +22,9 @@ This repository houses some quick and easy to use templates for deploying resour
         --profile your-profile
 
 The `--profile flag` is important only if you have more than one set of aws cli profiles.
+See below a basic state machine created.
+
+![Nested Function Calling Another](img/nested_step_function.png)
 
 
 ### Describing A stack (to see what has been created)
@@ -42,6 +45,9 @@ To Update a Stack eg; your nested step function and lambda workflow after a prev
         --capabilities CAPABILITY_NAMED_IAM
 
 The `--capabilities` argument is necesssary because we would be creating IAM roles and giving them names.
+Below is an example of a successful update.
+
+![Image Showing Sucessful StackFormation deployment](img/cloudformation_stack_success.png)
 
 
 ### Deleting a Stack
@@ -52,3 +58,7 @@ The `--capabilities` argument is necesssary because we would be creating IAM rol
 ### Amazon State Language - ASL 
 Simply Saving your yaml files of a step function using the `.asl.yaml` file extension enables VSCode (if the AWS Toolkit is installed) to identify it as an asl template giving you the ability to easily click to either create a state machine or update an existing one.
 Note: This can also be written in Json.
+
+See an example of this below (at the green arrow);
+
+![Image of ASL VIEW](img/asl_vscode_view.png)
