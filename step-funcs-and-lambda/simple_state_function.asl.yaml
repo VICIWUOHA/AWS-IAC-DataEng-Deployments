@@ -1,0 +1,22 @@
+Comment: A description of my state machine
+StartAt: Pass
+
+States:
+  Pass:
+    Type: Pass
+    OutputPath: "$.status"
+    Next: Choice
+
+  Choice: 
+    Type: Choice
+    Choices: 
+      - Variable: "$"
+        StringEquals: "SUCCESS" 
+        Next: Fail
+    Default: Success
+
+  Fail:
+    Type: Fail
+
+  Success: 
+    Type: Succeed
