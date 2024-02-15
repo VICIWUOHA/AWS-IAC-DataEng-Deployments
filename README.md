@@ -19,22 +19,30 @@ This repository houses some quick and easy to use templates for deploying resour
             aws cloudformation create-stack \
         --stack-name demo-postgres-stack \
         --template-body file://aws-rds-postgres-deploy.yaml \
-        --profile d2s
+        --profile your-profile
+
+The `--profile flag` is important only if you have more than one set of aws cli profiles.
 
 
 ### Describing A stack (to see what has been created)
 
         aws cloudformation describe-stacks --stack-name my-stack
 
+### Validating  a Stack
+
+        aws cloudformation validate-template --template-body file://rds/aws-rds-postgres-deploy.yaml
 
 ### Updating a Stack
 
 To Update a Stack eg; your nested step function and lambda workflow after a previous deployment, run.
 
-            aws cloudformation update-stack \ 
+            aws cloudformation update-stack \
         --stack-name demo-sf-yaml-nested-stack \
-        --template-body file://nested_workflows_v2.yaml \
+        --template-body file://step-funcs-and-lambda/nested_step_funcs_with_lambdas.yaml \
         --capabilities CAPABILITY_NAMED_IAM
+
+The `--capabilities` argument is necesssary because we would be creating IAM roles and giving them names.
+
 
 ### Deleting a Stack
 
