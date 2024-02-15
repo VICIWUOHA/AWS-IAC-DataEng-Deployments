@@ -25,7 +25,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource: arn:aws:logs:*:*:*
 
-  # this role has the necessary permissions for step functions used here (modify to taste)
+    # this role has the necessary permissions for step functions used here (modify to your use case)
   StepFunctionExecutionRole:
     Type: AWS::IAM::Role
     Properties:
