@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: demo_cft_LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: demo_cft_LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+
+  # this role has the necessary permissions for step functions used here (modify to taste)
+  StepFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: demo_cft_StepFunctionExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+
+      Policies:
+        - PolicyName: demo_cft_StepFunctionExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                  - states:DescribeExecution
+                  - states:StopExecution
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:  
+                  - events:PutTargets
+                  - events:PutRule 
+                  - events:DescribeRule
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  ParentFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ParentFunction
+      Handler: index.handler  #path/to/parent.handler
+      Runtime: nodejs14.x
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const stepfunctions = new AWS.StepFunctions();
+
+          exports.handler = async (event) => {
+            const params = {
+              stateMachineArn: process.env.CHILD_STATE_MACHINE_ARN,
+              input: JSON.stringify(event)
+            };
+
+            const response = await stepfunctions.startExecution(params).promise();
+
+            return response;
+          };
+      Role: !GetAtt LambdaExecutionRole.Arn
+      
+  ChildFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ChildFunction
+      Handler: index.handler  #path/to/handler (typically index.handler or index.main if using the Python runtime)
+      Runtime: nodejs14.x
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log(event);
+            return event;
+          };
+      Role: !GetAtt LambdaExecutionRole.Arn
+    
+  ChildStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: ChildStateMachine
+      DefinitionString:
+        Fn::Sub:
+          - |
+            {
+              "Comment": "A child Step Functions state machine",
+              "StartAt": "MyFirstChildState",
+              "States": {
+                "MyFirstChildState": {
+                  "Type": "Task",
+                  "Resource": "${ChildFunctionArn}",
+                  "End": true
+                }
+              }
+            }
+          - ChildFunctionArn: !GetAtt ChildFunction.Arn
+      RoleArn: !GetAtt StepFunctionExecutionRole.Arn
+
+  ParentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: ParentStateMachine
+      DefinitionString:
+        Fn::Sub:
+          - |
+            {
+              "Comment": "A parent Step Functions state machine",
+              "StartAt": "CallChildStateMachine",
+              "States": {
+                "CallChildStateMachine": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                  "Parameters": {
+                    "Input": {
+                      "StatePayload": "Hello from Step Functions!",
+                      "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                    },
+                    "StateMachineArn": "${ChildStateMachineArn}"
+                  },
+                  "End": true
+                }
+              }
+            }
+          - ChildStateMachineArn: !GetAtt ChildStateMachine.Arn
+      RoleArn: !GetAtt StepFunctionExecutionRole.Arn
