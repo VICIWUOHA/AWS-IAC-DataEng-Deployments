@@ -1,0 +1,43 @@
+Resources:
+  stepFunctions:
+    Type: AWS::StepFunctions::StateMachine 
+
+    Properties:
+      RoleArn: arn:aws:iam::ACCOUNTNO:role/service-role/YOURSTEPFUNCTIONSROLE #OR CREATE A NEW ONE IN YOUR STACK
+      StateMachineName: demo-sm-cft-v3
+      Definition:
+        Comment: "A Step Functions state machine"
+        StartAt: MyFirstState
+        States:
+          MyFirstState:
+            Type: Task
+            Resource: arn:aws:lambda:us-east-1:ACCOUNTNO:function:YOURLAMBDAFXN
+            # End: 'false'
+            TimeoutSeconds: 300
+            Retry:
+              - ErrorEquals: ["States.ALL"]
+                IntervalSeconds: 3
+                MaxAttempts: 3
+            Catch:
+              - ErrorEquals: ["States.ALL"]
+                Next: MyErrorState
+            Next: MyCallbackState
+          MyErrorState:
+            Type: Fail
+            Error: "Error"
+            Cause: "An error occurred"
+          MyCallbackState:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
+            Parameters:
+              FunctionName: myCallbackFunction
+              Payload: {}
+            ResultPath: "$.result"
+            End: true
+            Retry:
+              - ErrorEquals: ["States.ALL"]
+                IntervalSeconds: 3
+                MaxAttempts: 3
+
+      
+
